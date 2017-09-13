@@ -1,0 +1,6 @@
+## Node
+node_modules
+.DS_Store
+
+## Sensitive information
+keys.json
