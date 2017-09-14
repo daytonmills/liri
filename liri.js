@@ -9,7 +9,6 @@ const chalk = require('chalk');
 
 const log = console.log;
 
-//Create the liri object
 var liri = {
     commands : {
         twitter : function() {
@@ -20,38 +19,31 @@ var liri = {
               access_token_secret: keys.twitter.access_token_secret
             });
 
-            //Fetch the latest tweets from an account
             twitterApi.get('statuses/user_timeline', 'lirib0t', function(error, tweets, response)
             {
                 if (!error)
                 {
-                    log(chalk.cyan.underline.bold('\nHere are the latest tweets for @lirib0t!'));
-                    //For each tweet that is returned
+                    log(chalk.cyan.bold('\nTwitter: ')+chalk.gray('\n>----------------------------------------------------<'));
+
                     for (let [index, tweet] of tweets.entries())
                     {
-                        //Initialize tweet variables
                         var tweetWords = tweet.text.split(' ');
                         var tweetDates = moment(tweet.created_at,'dd MMM DD HH:mm:ss ZZ YYYY').format('MM/DD/YYYY hh:mm');
                         var handles = [];
                         var newWords = [];
                         var newTweet;
 
-                        //For every word within a tweet
                         for(let word of tweetWords)
                         {
-                            //If the word is a handle
                             if(word.includes('@'))
                             {
-                                //Separate handle from the rest of tweet
                                 handles.push(word);
                             }
                             else
                             {
-                                //Push all of the other words into a string
                                 newWords.push(word);
                                 newTweet = newWords.join(' ');
 
-                                //When all words are together, print the tweet
                                 if(newTweet === tweet.text)
                                 {
                                     printTweet('status', tweetDates, tweet.text);
@@ -59,10 +51,8 @@ var liri = {
                             }
                         }
 
-                        //For every handle within a tweet
                         for(let handle of handles)
                         {
-                            //Verify the the tweet is a reply and print the tweet
                             if(handle + ' ' + newTweet === tweet.text)
                             {
                                 printTweet('reply', tweetDates, newTweet, handle);
@@ -72,7 +62,6 @@ var liri = {
                 }
             });
 
-            //Print tweets in console with or without handles
             function printTweet(type, date, tweet, handle) {
                 switch(type) {
                     case 'reply':
@@ -130,16 +119,27 @@ var liri = {
                 });
 
                 trackFetcher.then((tracks) => {
-                    //Have user select their choice
-                    console.log(tracks);
                     inquirer.prompt([
                         {
                           type: 'list',
-                          message: 'Select a track from the list',
+                          message: 'Select a track from the results',
                           choices: tracks,
                           name: "track"
                       }]).then(function(selected) {
-                          console.log(selected);
+                          log(
+                              chalk.green.bold('\nSpotify: ') +
+                              chalk.gray('\n>----------------------------------------------------<') +
+                              chalk.white.bold('\nTrack: ') +
+                              chalk.green(selected.track.name) +
+                              ' by: ' +
+                              chalk.green(selected.track.artist) +
+                              '\n' +
+                              chalk.white.bold('Album: ') +
+                              chalk.green(selected.track.album) +
+                              '\n' +
+                              chalk.white.bold('Listen: ') +
+                              chalk.green.underline(selected.track.url)
+                          );
                     });
                 });
             });
