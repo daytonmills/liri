@@ -3,6 +3,7 @@ const handles = require('./handles.js');
 
 const twitter = require('twitter');
 const spotify = require('node-spotify-api');
+const request = require('request');
 const inquirer = require('inquirer');
 const moment = require('moment');
 const chalk = require('chalk');
@@ -66,17 +67,14 @@ var liri = {
                 switch(type) {
                     case 'reply':
                         log(
-                            chalk.gray(date) +
-                            ' > ' +
-                            chalk.cyan(handle) +
-                            ' ' +
+                            chalk.cyanBright(date + ': ') +
+                            chalk.cyan(handle + ' ') +
                             chalk.white(tweet)
                         );
                         break;
                     case 'status':
                         log(
-                            chalk.gray(date) +
-                            ' > ' +
+                            chalk.cyanBright(date + ': ') +
                             chalk.white(tweet)
                         );
                         break;
@@ -129,16 +127,18 @@ var liri = {
                           log(
                               chalk.green.bold('\nSpotify: ') +
                               chalk.gray('\n>----------------------------------------------------<') +
-                              chalk.white.bold('\nTrack: ') +
-                              chalk.green(selected.track.name) +
-                              ' by: ' +
-                              chalk.green(selected.track.artist) +
+
+                              chalk.greenBright.bold('\nTrack: ') +
+                              chalk.white(selected.track.name) +
                               '\n' +
-                              chalk.white.bold('Album: ') +
-                              chalk.green(selected.track.album) +
+                              chalk.greenBright.bold('Artist: ') +
+                              chalk.white(selected.track.artist) +
                               '\n' +
-                              chalk.white.bold('Listen: ') +
-                              chalk.green.underline(selected.track.url)
+                              chalk.greenBright.bold('Album: ') +
+                              chalk.white(selected.track.album) +
+                              '\n' +
+                              chalk.greenBright.bold('Listen: ') +
+                              chalk.white.underline(selected.track.url)
                           );
                     });
                 });
@@ -147,7 +147,32 @@ var liri = {
 
         movie: function()
         {
-
+            request('https://www.omdbapi.com/?apikey=40e9cece&t=Mr+Nobody', function (error, response, body) {
+                if(!error)
+                {
+                    var movie = JSON.parse(body);
+                    log(
+                        chalk.yellow.bold('\nMovie: ') +
+                        chalk.gray('\n>----------------------------------------------------<') +
+                        chalk.yellow.bold('\nName: ') +
+                        chalk.white(movie.Title) +
+                        chalk.yellow.bold('\nPlot: ') +
+                        chalk.white(movie.Plot) +
+                        chalk.yellow.bold('\nYear: ') +
+                        chalk.white(movie.Year) +
+                        chalk.yellow.bold('\nCast: ') +
+                        chalk.white(movie.Actors) +
+                        chalk.yellow.bold('\nCountries: ') +
+                        chalk.white(movie.Country) +
+                        chalk.yellow.bold('\nLanguages: ') +
+                        chalk.white(movie.Language) +
+                        chalk.yellow.bold('\nIMDB Ratings: ') +
+                        chalk.white(movie.Ratings[0].Value) +
+                        chalk.yellow.bold('\nRotten Tomatos: ') +
+                        chalk.white(movie.Ratings[1].Value)
+                    );
+                }
+            });
         },
 
         simon: function()
@@ -157,4 +182,4 @@ var liri = {
     }
 }
 
-liri.commands.spotify();
+liri.commands.twitter();
