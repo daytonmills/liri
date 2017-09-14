@@ -2,24 +2,26 @@ const keys = require('./keys.json');
 const handles = require('./handles.js');
 
 const twitter = require('twitter');
+const spotify = require('node-spotify-api');
+const inquirer = require('inquirer');
 const moment = require('moment');
 const chalk = require('chalk');
 
 const log = console.log;
 
-var twitterClient = new twitter({
-  consumer_key: keys.consumer_key,
-  consumer_secret: keys.consumer_secret,
-  access_token_key: keys.access_token_key,
-  access_token_secret: keys.access_token_secret
-});
-
 //Create the liri object
 var liri = {
     commands : {
         twitter : function() {
+            var twitterApi = new twitter({
+              consumer_key: keys.twitter.consumer_key,
+              consumer_secret: keys.twitter.consumer_secret,
+              access_token_key: keys.twitter.access_token_key,
+              access_token_secret: keys.twitter.access_token_secret
+            });
+
             //Fetch the latest tweets from an account
-            twitterClient.get('statuses/user_timeline', 'lirib0t', function(error, tweets, response)
+            twitterApi.get('statuses/user_timeline', 'lirib0t', function(error, tweets, response)
             {
                 if (!error)
                 {
@@ -29,7 +31,7 @@ var liri = {
                     {
                         //Initialize tweet variables
                         var tweetWords = tweet.text.split(' ');
-                        var tweetDates = moment(tweet.created_at,'dd MMM DD HH:mm:ss ZZ YYYY').format('MM/DD/YYYY');
+                        var tweetDates = moment(tweet.created_at,'dd MMM DD HH:mm:ss ZZ YYYY').format('MM/DD/YYYY hh:mm');
                         var handles = [];
                         var newWords = [];
                         var newTweet;
@@ -76,7 +78,7 @@ var liri = {
                     case 'reply':
                         log(
                             chalk.gray(date) +
-                            ' ' +
+                            ' > ' +
                             chalk.cyan(handle) +
                             ' ' +
                             chalk.white(tweet)
@@ -85,7 +87,7 @@ var liri = {
                     case 'status':
                         log(
                             chalk.gray(date) +
-                            ' ' +
+                            ' > ' +
                             chalk.white(tweet)
                         );
                         break;
@@ -95,7 +97,52 @@ var liri = {
 
         spotify: function()
         {
+            var spotifyApi = new spotify({
+              id: keys.spotify.id,
+              secret: keys.spotify.secret
+            });
 
+            spotifyApi.search({ type: 'track', query: 'All the small things', limit: 10  }, function(err, data)
+            {
+                if (err)
+                {
+                    return console.log('Error occurred: ' + err);
+                }
+
+                var tracks = [];
+
+                let trackFetcher = new Promise((resolve, reject) => {
+                    for(let track of data.tracks.items)
+                    {
+                        var trackData = {
+                            name : track.name + " by: " + track.artists[0].name,
+                            value : {
+                                name: track.name,
+                                album: track.album.name,
+                                artist: track.artists[0].name,
+                                url: track.external_urls.spotify,
+                            }
+                        }
+
+                        tracks.push(trackData);
+                        resolve(tracks);
+                    }
+                });
+
+                trackFetcher.then((tracks) => {
+                    //Have user select their choice
+                    console.log(tracks);
+                    inquirer.prompt([
+                        {
+                          type: 'list',
+                          message: 'Select a track from the list',
+                          choices: tracks,
+                          name: "track"
+                      }]).then(function(selected) {
+                          console.log(selected);
+                    });
+                });
+            });
         },
 
         movie: function()
@@ -110,4 +157,4 @@ var liri = {
     }
 }
 
-liri.commands.twitter();
+liri.commands.spotify();

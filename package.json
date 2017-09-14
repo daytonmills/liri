@@ -22,7 +22,9 @@
   "homepage": "https://github.com/daytonmills/liri#readme",
   "dependencies": {
     "chalk": "^2.1.0",
+    "inquirer": "^3.2.3",
     "moment": "^2.18.1",
+    "node-spotify-api": "^1.0.7",
     "twitter": "^1.7.1"
   }
 }
