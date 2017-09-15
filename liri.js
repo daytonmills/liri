@@ -1,13 +1,12 @@
 const keys = require('./keys.json');
 const handles = require('./handles.js');
-
 const twitter = require('twitter');
 const spotify = require('node-spotify-api');
 const request = require('request');
 const inquirer = require('inquirer');
 const moment = require('moment');
 const chalk = require('chalk');
-
+const fs = require('fs');
 const log = console.log;
 
 var liri = {
@@ -24,12 +23,15 @@ var liri = {
             {
                 if (!error)
                 {
-                    log(chalk.cyan.bold('\nTwitter: ')+chalk.gray('\n>----------------------------------------------------<'));
+                    log(
+                        chalk.cyan.bold('\nTwitter: ')+
+                        chalk.gray('\n>----------------------------------------------------<')
+                    );
 
                     for (let [index, tweet] of tweets.entries())
                     {
                         var tweetWords = tweet.text.split(' ');
-                        var tweetDates = moment(tweet.created_at,'dd MMM DD HH:mm:ss ZZ YYYY').format('MM/DD/YYYY hh:mm');
+                        var tweetDay = moment(tweet.created_at,'dd MMM DD HH:mm:ss ZZ YYYY').format('MM/DD/YYYY hh:mm');
                         var handles = [];
                         var newWords = [];
                         var newTweet;
@@ -47,7 +49,7 @@ var liri = {
 
                                 if(newTweet === tweet.text)
                                 {
-                                    printTweet('status', tweetDates, tweet.text);
+                                    printTweet('status', tweetDay, tweet.text);
                                 }
                             }
                         }
@@ -56,7 +58,7 @@ var liri = {
                         {
                             if(handle + ' ' + newTweet === tweet.text)
                             {
-                                printTweet('reply', tweetDates, newTweet, handle);
+                                printTweet('reply', tweetDay, newTweet, handle);
                             }
                         }
                     }
@@ -82,72 +84,70 @@ var liri = {
             }
         },
 
-        spotify: function()
+        spotify: function(query)
         {
             var spotifyApi = new spotify({
               id: keys.spotify.id,
               secret: keys.spotify.secret
             });
 
-            spotifyApi.search({ type: 'track', query: 'All the small things', limit: 10  }, function(err, data)
+            spotifyApi.search({ type: 'track', query: query, limit: 10  }, function(error, data)
             {
-                if (err)
+                if(!error)
                 {
-                    return console.log('Error occurred: ' + err);
-                }
+                    var tracks = [];
 
-                var tracks = [];
-
-                let trackFetcher = new Promise((resolve, reject) => {
-                    for(let track of data.tracks.items)
-                    {
-                        var trackData = {
-                            name : track.name + " by: " + track.artists[0].name,
-                            value : {
-                                name: track.name,
-                                album: track.album.name,
-                                artist: track.artists[0].name,
-                                url: track.external_urls.spotify,
-                            }
-                        }
-
-                        tracks.push(trackData);
-                        resolve(tracks);
-                    }
-                });
-
-                trackFetcher.then((tracks) => {
-                    inquirer.prompt([
+                    let trackFetcher = new Promise((resolve, reject) => {
+                        for(let track of data.tracks.items)
                         {
-                          type: 'list',
-                          message: 'Select a track from the results',
-                          choices: tracks,
-                          name: "track"
-                      }]).then(function(selected) {
-                          log(
-                              chalk.green.bold('\nSpotify: ') +
-                              chalk.gray('\n>----------------------------------------------------<') +
+                            var trackData = {
+                                name : track.name + ' by: ' + track.artists[0].name,
+                                value : {
+                                    name: track.name,
+                                    album: track.album.name,
+                                    artist: track.artists[0].name,
+                                    url: track.external_urls.spotify,
+                                }
+                            }
 
-                              chalk.greenBright.bold('\nTrack: ') +
-                              chalk.white(selected.track.name) +
-                              '\n' +
-                              chalk.greenBright.bold('Artist: ') +
-                              chalk.white(selected.track.artist) +
-                              '\n' +
-                              chalk.greenBright.bold('Album: ') +
-                              chalk.white(selected.track.album) +
-                              '\n' +
-                              chalk.greenBright.bold('Listen: ') +
-                              chalk.white.underline(selected.track.url)
-                          );
+                            tracks.push(trackData);
+                            resolve(tracks);
+                        }
                     });
-                });
+
+                    trackFetcher.then((tracks) => {
+                        inquirer.prompt([
+                            {
+                              type: 'list',
+                              message: 'Select a track from the results',
+                              choices: tracks,
+                              name: "track"
+                          }]).then(function(selected) {
+                              log(
+                                  chalk.green.bold('\nSpotify: ') +
+                                  chalk.gray('\n>----------------------------------------------------<') +
+
+                                  chalk.greenBright.bold('\nTrack: ') +
+                                  chalk.white(selected.track.name) +
+                                  '\n' +
+                                  chalk.greenBright.bold('Artist: ') +
+                                  chalk.white(selected.track.artist) +
+                                  '\n' +
+                                  chalk.greenBright.bold('Album: ') +
+                                  chalk.white(selected.track.album) +
+                                  '\n' +
+                                  chalk.greenBright.bold('Listen: ') +
+                                  chalk.white.underline(selected.track.url)
+                              );
+                        });
+                    });
+                }
             });
         },
 
-        movie: function()
+        movie: function(query)
         {
-            request('https://www.omdbapi.com/?apikey=40e9cece&t=Mr+Nobody', function (error, response, body) {
+            request('https://www.omdbapi.com/?apikey='+keys.omdb.key+'&t='+query+'', function (error, response, body) {
                 if(!error)
                 {
                     var movie = JSON.parse(body);
@@ -177,9 +177,38 @@ var liri = {
 
         simon: function()
         {
-
+            fs.readFile('random.txt', 'utf8', (err, data) =>
+            {
+                data = data.split(',');
+                eval('liri.commands.'+ data[0] +'('+ data[1] +')');
+            });
         }
     }
 }
 
-liri.commands.twitter();
+switch(process.argv[2])
+{
+    case "spotify":
+        if(!process.argv[3]) {
+            liri.commands.spotify("The Sign");
+        } else {
+            liri.commands.spotify(process.argv[3]);
+        }
+        break;
+
+    case "twitter":
+        liri.commands.twitter();
+        break;
+
+    case "movie":
+        if(!process.argv[3]) {
+            liri.commands.movie('Mr. Nobody');
+        } else {
+            liri.commands.movie(process.argv[3]);
+        }
+        break;
+
+    case "simon":
+        liri.commands.simon();
+        break;
+}
